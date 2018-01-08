@@ -1,0 +1,63 @@
+---
+title: "Coursera Machine learning final project"
+author: "Giovanni Madejski"
+date: "January 8, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Background
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+
+The goal of this project is to create a model that can predict the manner in which exercises were completed. 
+
+## Loading packages and data
+We begin by loading the required libraries and downloading the datasets.
+
+```{r, message=FALSE, warning=FALSE}
+library(caret)
+library(randomForest)
+
+trainurl <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+testurl <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+
+training <- read.csv(url(trainurl), na.strings=c("NA","#DIV/0!",""))
+testing <- read.csv(url(testurl), na.strings=c("NA","#DIV/0!",""))
+```
+ 
+Next we clean the data by removing columns with over 50% missing values and removing unnecessary columns.
+```{r}
+training <- training[,colSums(is.na(training))<nrow(training)*0.5]
+
+unnecessary <- c('X','user_name','raw_timestamp_part_1','raw_timestamp_part_2','cvtd_timestamp','new_window')
+
+training <- training[,!names(training) %in% unnecessary]
+
+```
+
+## Building and Running the Model
+ We will use a random forest with 5 fold cross validation to model the data.
+```{r}
+rf_model <- train(classe~., data = training, method = "rf", trControl=trainControl(method="cv",number=5))
+save(rf_model,file="rf_model.Rda")
+
+print(rf_model)
+```
+
+This model appears to be very accurate. Lets look at the confusion matrix.
+```{r}
+print(rf_model$finalModel)
+```
+
+The estimate of out of sample error rate is only .14% meaning this model should be very accurate.
+
+## predictions on the test data
+We will now use our random forest model to make predictions on the test set.
+```{r}
+predict(rf_model, testing)
+```
+
+The predictions made by the model were 100% accurate on the test set. This further implies the validity of our model.
